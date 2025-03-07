@@ -1,0 +1,18 @@
+{
+  "name": "gaming-desk-scene",
+  "version": "1.0.0",
+  "description": "A 3D gaming desk scene with Three.js",
+  "dependencies": {
+    "dat.gui": "^0.7.9",
+    "gsap": "^3.5.1",
+    "three": "^0.153.0"
+  },
+  "devDependencies": {
+    "vite": "^4.5.9"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
