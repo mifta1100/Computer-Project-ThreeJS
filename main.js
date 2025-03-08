@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { ShaderMaterial, Vector3 } from 'three';
 import { TextureLoader } from 'three';
+
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -48,47 +50,99 @@ const monitorTextures = [
   textureLoader.load('./textures/screen6.png')  
 ];
 
-
-// textureLoader.load('./textures/screen1.png', (texture) => {
-//   console.log('Texture 1 Loaded:', texture);
-// });
-// textureLoader.load('./textures/screen2.png', (texture) => {
-//   console.log('Texture 2 Loaded:', texture);
-// });
-
-
+// Load CPU textures for different sides
+const cpuLeftTexture = textureLoader.load('./textures/gray.png');
 
 let currentTextureIndex = 0;
 
 // GLTF Loader for gaming desk, monitor, and CPU
 const gltfLoader = new GLTFLoader();
 let monitorMesh = null;
+let cpuMeshes = [];
+let cpuLeftSideMesh = null;
+let desktopModel = null;
 
-// Load Monitor
+// Create a container for the desktop model
+const desktopContainer = new THREE.Group();
+scene.add(desktopContainer);
+
+
+// Adjustment based on your specific model
+function isLeftSideOfCPU(mesh, parentName) {
+  if (mesh.name.toLowerCase().includes('left') && parentName.toLowerCase().includes('cpu')) {
+    return true;
+  }
+  
+  // Method 2: Check by position Center
+  if (parentName.toLowerCase().includes('cpu') || parentName.toLowerCase().includes('computer')) {
+    if (mesh.position.x < 0) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Load Monitor and CPU
 gltfLoader.load('./models/scene.gltf', (gltf) => {
   const monitor = gltf.scene;
   monitor.position.set(0, 0, 0);
   monitor.scale.set(1.5, 1.5, 1.5);
-  scene.add(monitor);
-  console.log(monitor);
+  
+  // Add the model to our container
+  desktopContainer.add(monitor);
+  desktopModel = monitor;
+  
+  console.log("Full model structure:", monitor);
+  
+  // Find all CPU components and the monitor screen
   monitor.traverse((child) => {
-    console.log(child);
+    const parentName = child.parent ? child.parent.name : '';
+    console.log("Child object:", child.name, "Parent:", parentName, "Position:", child.position);
+    
+    // Find and apply texture to monitor screen
     if (child?.children[0]?.isMesh && child.name === 'monitor_3') {
       monitorMesh = child.children[0];
       monitorMesh.material = new THREE.MeshStandardMaterial({
         map: monitorTextures[currentTextureIndex], 
       });
     }
+    
+    // Store all CPU-related meshes
+    if (child.isMesh && (
+        child.name.toLowerCase().includes('cpu') || 
+        child.name.toLowerCase().includes('computer') || 
+        child.name.toLowerCase().includes('tower') ||
+        (child.parent && child.parent.name.toLowerCase().includes('cpu')) ||
+        (child.parent && child.parent.name.toLowerCase().includes('computer')))) {
+      
+      cpuMeshes.push(child);
+      console.log("CPU-related mesh found:", child.name, "Position:", child.position);
+      
+      // Check left side of CPU
+      if (isLeftSideOfCPU(child, parentName)) {
+        console.log("Left side of CPU found:", child.name);
+        cpuLeftSideMesh = child;
+        
+        // Apply custom texture to left side of CPU
+        cpuLeftSideMesh.material = new THREE.MeshStandardMaterial({
+          map: cpuLeftTexture,
+          metalness: 0.5,
+          roughness: 0.2
+        });
+      }
+    }
   });
+  
+  if (!cpuLeftSideMesh && cpuMeshes.length > 0) {
+    console.log("Available CPU meshes:", cpuMeshes.length);
+  }
 });
-
 
 // Mouse interaction - Change monitor texture
 window.addEventListener('click', () => {
-  // console.log(monitorMesh);
   if (monitorMesh) {
-    // console.log("mouseClicked1");
-    currentTextureIndex = (currentTextureIndex +1) % monitorTextures.length;
+    currentTextureIndex = (currentTextureIndex + 1) % monitorTextures.length;
     monitorMesh.material.map = monitorTextures[currentTextureIndex];
     monitorMesh.material.needsUpdate = true;
     console.log("Texture changed to: ", monitorTextures[currentTextureIndex]);
@@ -96,12 +150,54 @@ window.addEventListener('click', () => {
   }
 });
 
+// Manually Test the Left Side
+document.addEventListener('keydown', (event) => {
+  const key = parseInt(event.key);
+  if (!isNaN(key) && key >= 1 && key <= 9 && key <= cpuMeshes.length) {
+    const selectedMesh = cpuMeshes[key - 1];
+    console.log("Applying texture to mesh:", selectedMesh.name);
+    
+    // Reset all CPU meshes to original material
+    cpuMeshes.forEach(mesh => {
+      if (mesh.originalMaterial) {
+        mesh.material = mesh.originalMaterial;
+      }
+    });
+    
+    // Apply texture to selected mesh
+    if (!selectedMesh.originalMaterial) {
+      selectedMesh.originalMaterial = selectedMesh.material.clone();
+    }
+    
+    selectedMesh.material = new THREE.MeshStandardMaterial({
+      map: cpuLeftTexture,
+      metalness: 0.5,
+      roughness: 0.2
+    });
+    selectedMesh.material.needsUpdate = true;
+    cpuLeftSideMesh = selectedMesh;
+    
+    console.log("Texture applied to mesh", key);
+    renderer.render(scene, camera);
+  }
+  
+  // Press 'R' to reset all textures
+  if (event.code === 'KeyR') {
+    cpuMeshes.forEach(mesh => {
+      if (mesh.originalMaterial) {
+        mesh.material = mesh.originalMaterial;
+        mesh.material.needsUpdate = true;
+      }
+    });
+    console.log("Reset all CPU textures");
+    renderer.render(scene, camera);
+  }
+});
 
-
-
-// Keyboard interaction - Move around the desktop
+// Keyboard interaction - Move and rotate
 const movement = { forward: false, backward: false, left: false, right: false };
 const speed = 0.1;
+const rotationSpeed = 0.03;
 
 document.addEventListener('keydown', (event) => {
   if (event.code === 'KeyW') movement.forward = true;
@@ -126,14 +222,16 @@ const clock = new THREE.Clock();
 function animate() {
   const delta = clock.getDelta();
 
-  // Move camera with keyboard input
+  // Handle forward-backward movement
   const direction = new THREE.Vector3();
   camera.getWorldDirection(direction);
   
   if (movement.forward) camera.position.addScaledVector(direction, speed);
   if (movement.backward) camera.position.addScaledVector(direction, -speed);
-  if (movement.left) camera.position.x -= speed;
-  if (movement.right) camera.position.x += speed;
+  
+  // Rotate the desktop container
+  if (movement.left) desktopContainer.rotation.y += rotationSpeed;
+  if (movement.right) desktopContainer.rotation.y -= rotationSpeed;
 
   animateLight();
   controls.update();
