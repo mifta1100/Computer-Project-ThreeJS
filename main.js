@@ -41,7 +41,11 @@ function animateLight() {
 const textureLoader = new TextureLoader();
 const monitorTextures = [
   textureLoader.load('./textures/screen1.png'), 
-  textureLoader.load('./textures/screen2.png') 
+  textureLoader.load('./textures/screen2.png'),
+  textureLoader.load('./textures/screen3.png'),
+  textureLoader.load('./textures/screen4.png'), 
+  textureLoader.load('./textures/screen5.png'), 
+  textureLoader.load('./textures/screen6.png')  
 ];
 
 
