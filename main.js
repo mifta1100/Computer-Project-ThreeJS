@@ -422,14 +422,14 @@ document.addEventListener('keydown', (event) => {
     });
   }
   
-  // '1-5' keys to change RGB effect patterns when holding Shift
+  
   if (event.shiftKey && !isNaN(key) && key >= 1 && key <= 5) {
     const patterns = [
-      { speed: 0.3, pulse: 2.0, intensity: 0.8 },  // Slow pulse
-      { speed: 0.7, pulse: 4.0, intensity: 0.9 },  // Fast pulse
-      { speed: 0.1, pulse: 0.5, intensity: 1.0 },  // Very slow, high intensity
-      { speed: 1.2, pulse: 1.0, intensity: 0.7 },  // Fast cycle, lower pulse
-      { speed: 0.5, pulse: 8.0, intensity: 0.85 }  // Medium speed, rapid pulse
+      { speed: 0.3, pulse: 2.0, intensity: 0.8 }, 
+      { speed: 0.7, pulse: 4.0, intensity: 0.9 },  
+      { speed: 0.1, pulse: 0.5, intensity: 1.0 },  
+      { speed: 1.2, pulse: 1.0, intensity: 0.7 },  
+      { speed: 0.5, pulse: 8.0, intensity: 0.85 }  
     ];
     
     const pattern = patterns[key - 1];
