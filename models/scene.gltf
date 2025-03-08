@@ -937,9 +937,6 @@
   "images": [
     {
       "uri": "../textures/screen1.png"
-    },
-    {
-      "uri": "../textures/screen2.png"
     }
   ],
   "materials": [

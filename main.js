@@ -68,8 +68,9 @@ gltfLoader.load('./models/scene.gltf', (gltf) => {
   scene.add(monitor);
   console.log(monitor);
   monitor.traverse((child) => {
-    if (child.isMesh && child.name === 'Screen') {
-      monitorMesh = child;
+    console.log(child);
+    if (child?.children[0]?.isMesh && child.name === 'monitor_3') {
+      monitorMesh = child.children[0];
       monitorMesh.material = new THREE.MeshStandardMaterial({
         map: monitorTextures[currentTextureIndex], 
       });
@@ -80,11 +81,14 @@ gltfLoader.load('./models/scene.gltf', (gltf) => {
 
 // Mouse interaction - Change monitor texture
 window.addEventListener('click', () => {
+  // console.log(monitorMesh);
   if (monitorMesh) {
-    currentTextureIndex = (currentTextureIndex + 1) % monitorTextures.length;
+    // console.log("mouseClicked1");
+    currentTextureIndex = (currentTextureIndex +1) % monitorTextures.length;
     monitorMesh.material.map = monitorTextures[currentTextureIndex];
     monitorMesh.material.needsUpdate = true;
     console.log("Texture changed to: ", monitorTextures[currentTextureIndex]);
+    renderer.render(scene, camera);
   }
 });
 
